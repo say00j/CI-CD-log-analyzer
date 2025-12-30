@@ -1,0 +1,19 @@
+# --- Core backend ---
+fastapi
+uvicorn
+
+# --- HTTP client (for remote LLM + webhooks) ---
+requests
+
+# --- Storage ---
+minio
+
+# --- Vector search ---
+qdrant-client
+
+# --- Embeddings ---
+sentence-transformers
+torch
+
+# --- Utilities ---
+python-dotenv

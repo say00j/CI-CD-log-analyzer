@@ -181,12 +181,115 @@ function App() {
 
   // --- MODIFICATION: Updated sendMessage to call a backend API ---
   // --- MODIFICATION: Updated sendMessage to support streaming from backend ---
+  // const sendMessage = useCallback(
+  //   async (text, file) => {
+  //     let currentId = activeId;
+  //     if (!currentId) {
+  //       currentId = createChat();
+  //     }
+
+  //     const userMessage = {
+  //       role: "user",
+  //       text,
+  //       time: Date.now(),
+  //       file: file ? { name: file.name, size: file.size } : null,
+  //       id: uid("m_"),
+  //     };
+
+  //     const tempAssistantMessage = {
+  //       id: uid("m_"),
+  //       role: "assistant",
+  //       text: "%%LOG_ANALYSIS_PLACEHOLDER%%", // Will be filled gradually with stream
+  //       time: Date.now(),
+  //     };
+
+  //     // Instantly update UI
+  //     setChats((prevChats) =>
+  //       prevChats.map((c) =>
+  //         c.id === currentId
+  //           ? {
+  //               ...c,
+  //               messages: [...c.messages, userMessage, tempAssistantMessage],
+  //             }
+  //           : c
+  //       )
+  //     );
+
+  //     setInputValue("");
+  //     removeAttachment();
+
+  //     try {
+  //       const formData = new FormData();
+  //       formData.append("prompt", text);
+  //       if (file) formData.append("file", file);
+
+  //       const response = await fetch("http://localhost:5000/api/analyze", {
+  //         method: "POST",
+  //         body: formData,
+  //       });
+
+  //       if (!response.ok || !response.body) {
+  //         throw new Error(`Server error: ${response.status}`);
+  //       }
+
+  //       // Stream reader setup
+  //       const reader = response.body.getReader();
+  //       const decoder = new TextDecoder("utf-8");
+  //       let accumulatedText = "";
+
+  //       while (true) {
+  //         const { done, value } = await reader.read();
+  //         if (done) break;
+
+  //         const chunk = decoder.decode(value, { stream: true });
+  //         accumulatedText += chunk;
+
+  //         // Update assistant message incrementally
+  //         setChats((prevChats) =>
+  //           prevChats.map((c) => {
+  //             if (c.id === currentId) {
+  //               return {
+  //                 ...c,
+  //                 messages: c.messages.map((m) =>
+  //                   m.id === tempAssistantMessage.id
+  //                     ? { ...m, text: accumulatedText }
+  //                     : m
+  //                 ),
+  //               };
+  //             }
+  //             return c;
+  //           })
+  //         );
+  //       }
+  //     } catch (error) {
+  //       console.error("Streaming failed:", error);
+  //       const errorMessage = `Error: ${
+  //         error.message || "Could not connect to the server."
+  //       }`;
+
+  //       setChats((prevChats) =>
+  //         prevChats.map((c) => {
+  //           if (c.id === currentId) {
+  //             return {
+  //               ...c,
+  //               messages: c.messages.map((m) =>
+  //                 m.id === tempAssistantMessage.id
+  //                   ? { ...m, text: errorMessage }
+  //                   : m
+  //               ),
+  //             };
+  //           }
+  //           return c;
+  //         })
+  //       );
+  //     }
+  //   },
+  //   [activeId, createChat]
+  // );
   const sendMessage = useCallback(
     async (text, file) => {
       let currentId = activeId;
-      if (!currentId) {
-        currentId = createChat();
-      }
+      if (!currentId) currentId = createChat();
 
       const userMessage = {
         role: "user",
@@ -199,13 +302,13 @@ function App() {
       const tempAssistantMessage = {
         id: uid("m_"),
         role: "assistant",
-        text: "%%LOG_ANALYSIS_PLACEHOLDER%%", // Will be filled gradually with stream
+        text: "%%LOG_ANALYSIS_PLACEHOLDER%%",
         time: Date.now(),
       };
 
-      // Instantly update UI
-      setChats((prevChats) =>
-        prevChats.map((c) =>
+      // Update UI immediately
+      setChats((prev) =>
+        prev.map((c) =>
           c.id === currentId
             ? {
                 ...c,
@@ -219,68 +322,59 @@ function App() {
       removeAttachment();
 
       try {
-        const formData = new FormData();
-        formData.append("prompt", text);
-        if (file) formData.append("file", file);
+        let logText = text || "";
 
-        const response = await fetch("http://localhost:5000/api/analyze", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok || !response.body) {
-          throw new Error(`Server error: ${response.status}`);
+        // If file is attached, read it as text
+        if (file) {
+          logText = await file.text();
         }
 
-        // Stream reader setup
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let accumulatedText = "";
+        const response = await fetch("http://localhost:8000/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            log_text: logText,
+            store: true,
+          }),
+        });
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        if (!response.ok) {
+          throw new Error(`Backend error ${response.status}`);
+        }
 
-          const chunk = decoder.decode(value, { stream: true });
-          accumulatedText += chunk;
+        const data = await response.json();
 
-          // Update assistant message incrementally
-          setChats((prevChats) =>
-            prevChats.map((c) => {
-              if (c.id === currentId) {
-                return {
+        const finalText =
+          data.llm_analysis || "No analysis returned. Check backend logs.";
+
+        setChats((prev) =>
+          prev.map((c) =>
+            c.id === currentId
+              ? {
                   ...c,
                   messages: c.messages.map((m) =>
                     m.id === tempAssistantMessage.id
-                      ? { ...m, text: accumulatedText }
+                      ? { ...m, text: finalText }
                       : m
                   ),
-                };
-              }
-              return c;
-            })
-          );
-        }
-      } catch (error) {
-        console.error("Streaming failed:", error);
-        const errorMessage = `Error: ${
-          error.message || "Could not connect to the server."
-        }`;
-
-        setChats((prevChats) =>
-          prevChats.map((c) => {
-            if (c.id === currentId) {
-              return {
-                ...c,
-                messages: c.messages.map((m) =>
-                  m.id === tempAssistantMessage.id
-                    ? { ...m, text: errorMessage }
-                    : m
-                ),
-              };
-            }
-            return c;
-          })
+                }
+              : c
+          )
+        );
+      } catch (err) {
+        setChats((prev) =>
+          prev.map((c) =>
+            c.id === currentId
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === tempAssistantMessage.id
+                      ? { ...m, text: `❌ ${err.message}` }
+                      : m
+                  ),
+                }
+              : c
+          )
         );
       }
     },

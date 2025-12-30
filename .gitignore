@@ -6,3 +6,4 @@ ci_log_fixer_longt5
 ci_log_fixer_model
 logs
 codes
+venv*
