@@ -10,7 +10,7 @@ from .storage import store_log_bytes, get_log_bytes, ensure_bucket
 from .embeddings import index_chunks, retrieve_top_k
 from dotenv import load_dotenv
 
-load_dotenv("backend\.env")
+load_dotenv("backend/.env")
 
 from fastapi.middleware.cors import CORSMiddleware
 

@@ -4,7 +4,7 @@ from minio import Minio
 from minio.error import S3Error
 from dotenv import load_dotenv
 
-load_dotenv("backend\.env")
+load_dotenv("backend/.env")
 
 # Read MinIO config from environment (or defaults for local development)
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")

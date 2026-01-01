@@ -10,7 +10,7 @@ import requests
 from typing import Optional
 from dotenv import load_dotenv
 
-load_dotenv("backend\.env")
+load_dotenv("backend/.env")
 
 # Load LLM endpoint from environment (DO NOT hardcode IPs)
 LLM_URL = os.getenv("LLM_URL")  # e.g. http://100.x.x.x:11434/api/generate

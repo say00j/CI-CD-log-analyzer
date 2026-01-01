@@ -16,7 +16,7 @@ from qdrant_client.http import models as rest
 import requests
 from dotenv import load_dotenv
 
-load_dotenv("backend\.env")
+load_dotenv("backend/.env")
 # --------------------------
 # Configuration
 # --------------------------
