@@ -184,6 +184,45 @@ TASK:
 3. Suggest concrete fixes (commands, config, or code).
 4. Mention assumptions if any.
 """
+        
+#         llm_prompt = f"""
+# You are a senior CI/CD engineer performing forensic log analysis.
+
+# Below are extracted log snippets from a FAILED CI/CD pipeline.
+
+# LOG CONTEXT:
+# {chr(10).join(context_blocks)}
+
+# RULES (IMPORTANT):
+# - Base all conclusions ONLY on evidence present in the logs.
+# - Do NOT invent tools, services, or environments not shown.
+# - Do NOT list generic possibilities unless directly supported by log lines.
+# - If a hypothesis is uncertain, explicitly mark it as such.
+# - Prefer precise technical causes over vague explanations.
+
+# TASK:
+# 1. Root Cause
+#    - State the single most likely root cause.
+#    - Quote or reference the exact log line(s) that prove it.
+
+# 2. Likely Causes (max 3)
+#    - Each cause MUST be justified by log evidence.
+#    - Do NOT include unlikely or generic causes.
+
+# 3. Concrete Fixes
+#    - Provide actionable fixes (exact commands, config changes, or code-level fixes).
+#    - Fixes must directly address the root cause.
+
+# 4. Assumptions
+#    - Only list assumptions if absolutely necessary.
+#    - Clearly explain why each assumption is required.
+
+# FORMAT STRICTLY AS:
+# Root Cause:
+# Likely Causes:
+# Concrete Fixes:
+# Assumptions:
+# """
 
         llm_analysis = run_llm(llm_prompt)
 
