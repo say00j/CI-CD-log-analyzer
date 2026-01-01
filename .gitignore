@@ -1,0 +1,9 @@
+.env
+raw_logs
+node_modules
+raw_logs
+ci_log_fixer_longt5
+ci_log_fixer_model
+logs
+codes
+venv*
