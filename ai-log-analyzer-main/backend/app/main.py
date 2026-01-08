@@ -170,59 +170,73 @@ async def analyze(request: Request):
                     f"[CHUNK {idx}]\n{item['chunk']}"
                 )
 
-        llm_prompt = f"""
-You are an expert CI/CD debugging assistant.
-
-Below are extracted log snippets from a failed CI/CD pipeline.
-
-LOG CONTEXT:
-{chr(10).join(context_blocks)}
-
-TASK:
-1. Explain the root cause clearly.
-2. List 2–3 likely causes.
-3. Suggest concrete fixes (commands, config, or code).
-4. Mention assumptions if any.
-"""
-        
 #         llm_prompt = f"""
-# You are a senior CI/CD engineer performing forensic log analysis.
+# You are an expert CI/CD debugging assistant.
 
-# Below are extracted log snippets from a FAILED CI/CD pipeline.
+# Below are extracted log snippets from a failed CI/CD pipeline.
 
 # LOG CONTEXT:
 # {chr(10).join(context_blocks)}
 
-# RULES (IMPORTANT):
-# - Base all conclusions ONLY on evidence present in the logs.
-# - Do NOT invent tools, services, or environments not shown.
-# - Do NOT list generic possibilities unless directly supported by log lines.
-# - If a hypothesis is uncertain, explicitly mark it as such.
-# - Prefer precise technical causes over vague explanations.
-
 # TASK:
-# 1. Root Cause
-#    - State the single most likely root cause.
-#    - Quote or reference the exact log line(s) that prove it.
-
-# 2. Likely Causes (max 3)
-#    - Each cause MUST be justified by log evidence.
-#    - Do NOT include unlikely or generic causes.
-
-# 3. Concrete Fixes
-#    - Provide actionable fixes (exact commands, config changes, or code-level fixes).
-#    - Fixes must directly address the root cause.
-
-# 4. Assumptions
-#    - Only list assumptions if absolutely necessary.
-#    - Clearly explain why each assumption is required.
-
-# FORMAT STRICTLY AS:
-# Root Cause:
-# Likely Causes:
-# Concrete Fixes:
-# Assumptions:
+# 1. Explain the root cause clearly.
+# 2. List 2–3 likely causes.
+# 3. Suggest concrete fixes (commands, config, or code).
+# 4. Mention assumptions if any.
 # """
+        
+        llm_prompt = f"""
+You are a senior CI/CD reliability engineer performing STRICT forensic analysis
+of a FAILED CI/CD pipeline.
+
+Your output will be reviewed for technical accuracy and auditability.
+
+LOG CONTEXT:
+{chr(10).join(context_blocks)}
+
+NON-NEGOTIABLE RULES:
+- Use ONLY facts explicitly present in the logs.
+- If a fact is not explicitly present, it MUST NOT appear.
+- Do NOT speculate, generalize, or suggest "possible" causes without evidence.
+- If multiple failures appear, you MUST:
+  • list earlier failures
+  • identify the FINAL BLOCKING failure
+- A failure is FINAL BLOCKING ONLY if:
+  • subsequent stages did not execute OR
+  • the pipeline summary confirms it
+- EVERY cause MUST reference at least one exact log line.
+- If a cause has no supporting log line, DO NOT include it.
+- Fixes MUST be reproducible and configuration-based.
+- Do NOT suggest fixes that could worsen compatibility.
+
+TASKS:
+
+1. Root Cause
+   - Identify the FINAL BLOCKING failure.
+   - Quote the exact log lines proving it.
+
+2. Likely Causes (MAX 2)
+   - Include ONLY causes with direct log evidence.
+   - Rank by likelihood (High / Medium).
+   - Explicitly reference supporting log lines.
+
+3. Concrete Fixes
+   - Provide fixes ONLY for the listed causes.
+   - Prefer Dockerfile or requirements.txt changes.
+   - Include exact snippets.
+
+4. Assumptions
+   - List ONLY unavoidable assumptions.
+   - If none are required, state:
+     "None required based on available logs."
+
+STRICT OUTPUT FORMAT:
+Root Cause:
+Likely Causes:
+Concrete Fixes:
+Assumptions:
+"""
+
 
         llm_analysis = run_llm(llm_prompt)
 
